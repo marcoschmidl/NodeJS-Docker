@@ -1,0 +1,66 @@
+version: '3.8'
+services:
+  nodejs:
+    build:
+      dockerfile: Dockerfile.backend
+      context: ./backend
+    container_name: nodejs
+    depends_on:
+      - mysqldb
+    links:
+      - mysqldb
+    restart: on-failure
+    environment:
+      MYSQL_HOST: mysqldb
+      MYSQL_USER: broker
+      MYSQL_PASSWORD: avaya123!
+      MYSQL_DB: hackathon
+    env_file: .env
+    volumes:
+      #- .:/home/node/app
+      - ./backend:/home/node/app
+      - node_modules:/home/node/app/node_modules
+    ports:
+      - '8080:8080'
+    networks:
+      - hacknet
+    command: ./wait-for.sh mysql:3306 -- /home/node/app/node_modules/.bin/nodemon server.js
+
+  mysqldb:
+    image: mysql:latest
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      MYSQL_ROOT_PASSWORD: test
+      #$MYSQLDB_ROOT_PASSWORD
+      MYSQL_DATABASE: test
+      #$MYSQLDB_DATABASE
+
+    ports:
+      - '3306:3306'
+    volumes:
+      - dbata:/var/lib/mysql
+      #- ./init:/docker-entrypoint-initdb.d
+    networks:
+      - hacknet
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: pma
+    links:
+      - mysqldb
+    environment:
+      PMA_HOST: mysqldb
+      PMA_PORT: 3306
+      PMA_ARBITRARY: 1
+    restart: always
+    ports:
+      - '8081:80'
+
+networks:
+  hacknet:
+    driver: bridge
+
+volumes:
+  dbata:
+  node_modules:
